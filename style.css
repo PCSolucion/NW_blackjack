@@ -186,3 +186,107 @@ BUTTON {
   color: #ffcc00;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
+/* Estilos para la tabla de premios */
+.prizes-table {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 10px;
+  padding: 20px;
+  margin-left: 20px;
+  color: #DDDDDD;
+  min-width: 250px;
+}
+
+.prizes-table h3 {
+  text-align: center;
+  color: #ffcc00;
+  margin-bottom: 20px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.prize-row {
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.prize-row.active {
+  background: rgba(0, 255, 0, 0.2);
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+  transform: scale(1.05);
+}
+
+.prize-description {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.prize-icons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.gorgon-eye {
+  width: 30px;
+  height: 30px;
+  background: radial-gradient(circle at 50% 50%, #ff9900, #ff0000);
+  border-radius: 50%;
+  position: relative;
+ 
+}
+
+.gorgon-eye::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: black;
+  border-radius: 50%;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Animación para cuando se activa un premio */
+
+
+.prize-row.active .gorgon-eye {
+  animation: prizeGlow 1.5s infinite;
+}
+
+.gorgon-eye {
+  width: 50px;
+  height: 50px;
+  background-image: url('https://res.cloudinary.com/pcsolucion/image/upload/v1744329134/codeyet1_ybd5ch.png');
+  background-size: cover;
+  background-position: center;
+  border-radius: 50%;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* Eliminar el pseudo-elemento ::before ya que ahora usamos una imagen */
+.gorgon-eye::before {
+  display: none;
+}
+
+/* Animación para cuando se activa un premio */
+@keyframes prizeGlow {
+  0% { 
+    transform: scale(1);
+  }
+  50% { 
+    transform: scale(1.1);
+  }
+  100% { 
+    transform: scale(1);
+  }
+}
+
+.prize-row.active .gorgon-eye {
+  animation: prizeGlow 1.5s infinite;
+}
