@@ -1,5 +1,8 @@
 BODY {
-  background-color: #0000000f;
+  background-image: url('https://res.cloudinary.com/pcsolucion/image/upload/v1744817747/tty_hpjp5j.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   min-height:400px;
   padding:20px;
   color:#DDDDDD;
