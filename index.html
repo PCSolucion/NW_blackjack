@@ -1,55 +1,112 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Blackjack</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blackjack - Modo Oscuro</title>
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 <div class="container">
-  <div class="game-area">
-    <!-- partial:index.partial.html -->
-    <div id="rules" class="rules">
-      <p>Reglas del Blackjack: Gana quien se acerque más a 21 sin pasarse</p>
+  <div class="main-game-column">
+    <div class="game-area">      
+      <div class="game-board">
+        <div class="dealer-area participant-area">
+          <h3><i class="fas fa-robot"></i> Casa</h3>
+          <div id="houseScore" class="score">0</div>
+          <div id="board" class="cards-container">
+            <div id="card1" class="card">
+              <div class="card-inner">
+                <div class="card-front"></div>
+                <div class="card-back"></div>
+              </div>
+            </div>
+            <div id="card2" class="card">
+              <div class="card-inner">
+                <div class="card-front"></div>
+                <div class="card-back"></div>
+              </div>
+            </div>
+            <div id="card3" class="card">
+              <div class="card-inner">
+                <div class="card-front"></div>
+                <div class="card-back"></div>
+              </div>
+            </div>
+            <!-- Las cartas reales se añadirán aquí con JS -->
+          </div>
+        </div>
+
+        <div class="player-area participant-area">
+          <h3><i class="fas fa-user"></i> Jugador</h3>
+          <div id="playerScore" class="score">0</div>
+          <div id="playerCards" class="cards-container">
+            <div id="playerCard1" class="card">
+              <div class="card-inner">
+                <div class="card-front"></div>
+                <div class="card-back"></div>
+              </div>
+            </div>
+            <div id="playerCard2" class="card">
+              <div class="card-inner">
+                <div class="card-front"></div>
+                <div class="card-back"></div>
+              </div>
+            </div>
+            <div id="playerCard3" class="card">
+              <div class="card-inner">
+                <div class="card-front"></div>
+                <div class="card-back"></div>
+              </div>
+            </div>
+            <!-- Las cartas reales se añadirán aquí con JS -->
+          </div>
+        </div>
+      </div>
+      
+      <div id="winnerMessage" class="winner-message"></div>
     </div>
-    
-    Casa:<div id="board" style="display: block;">
-      <div id="card1"></div>
-      <div id="card2"></div>
-      <div id="card3"></div>
-      <div id="houseScore" class="score">0</div>
-    </div>
-    
-    Jugador:
-    <div id="playerCards">
-      <div id="playerCard1"></div>
-      <div id="playerCard2"></div>
-      <div id="playerCard3"></div>
-      <div id="playerScore" class="score">0</div>
-      <button onclick="javascript: nextStep(this);">Nueva ronda</button>
-    </div>
-    
-    <div id="winnerMessage" class="winner-message"></div>
   </div>
 
-  <!-- Nueva tabla de premios -->
-  <div class="prizes-table">
-    <h3>Tabla de Premios</h3>
-    <div class="prize-row" id="prize21">
-      <div class="prize-description">Victoria con 21 puntos - 2x Ojos de Gorgona </div>
-      <div class="prize-icons">
-        <div class="gorgon-eye"></div>
-        <div class="gorgon-eye"></div>
+  <div class="side-column">
+    <!-- Tabla de premios -->
+    <div class="prizes-table">
+      <h3><i class="fas fa-trophy"></i> Tabla de Premios</h3>
+      <div class="prize-row" id="prize21">
+        <div class="prize-container">
+          <div class="prize-details">
+             <span class="prize-quantity">2x</span>
+             <img src="./images/goldenscarab.png" alt="Escarabajo de Oro" class="prize-icon">
+             <span class="prize-name">Escarabajo de Oro</span>
+          </div>
+          <div class="prize-condition">Victoria con 21 puntos</div>
+        </div>
+      </div>
+      <div class="prize-row" id="prizeNormal">
+        <div class="prize-container">
+           <div class="prize-details">
+             <span class="prize-quantity">1x</span>
+             <img src="./images/goldenscarab.png" alt="Escarabajo de Oro" class="prize-icon">
+             <span class="prize-name">Escarabajo de Oro</span>
+           </div>
+           <div class="prize-condition">Victoria normal</div>
+        </div>
       </div>
     </div>
-    <div class="prize-row" id="prizeNormal">
-      <div class="prize-description">Victoria normal - 1x Ojos de Gorgona</div>
-      <div class="prize-icons">
-        <div class="gorgon-eye"></div>
-      </div>
+    
+    <!-- Reglas -->
+    <div id="rules" class="rules">
+      <i class="fas fa-dice fa-sm"></i>
+      <p>Reglas del Blackjack: Gana quien se acerque más a 21 sin pasarse</p>
     </div>
   </div>
 </div>
+
+<footer class="footer">
+  <p>&copy; 2023 Blackjack - Modo Oscuro</p>
+</footer>
+
 <script src="./script.js"></script>
 </body>
 </html>
