@@ -226,7 +226,12 @@ function determineWinner() {
     winner = 'casa';
   } else if (houseScore > 21) {
     winner = 'jugador';
-    document.getElementById('prizeNormal').classList.add('active');
+    // Verificar si el jugador tiene 21 puntos
+    if (playerScore === 21) {
+      document.getElementById('prize21').classList.add('active');
+    } else {
+      document.getElementById('prizeNormal').classList.add('active');
+    }
     // Reproducir sonido de premio
     playPremioSound();
   } else if (playerScore > houseScore) {
@@ -243,7 +248,13 @@ function determineWinner() {
   } else if (playerScore < houseScore) {
     winner = 'casa';
   } else {
+    // Empate - verificar si ambos tienen 21 puntos
     winner = 'empate';
+    if (playerScore === 21) {
+      document.getElementById('prize21').classList.add('active');
+      // Reproducir sonido de premio
+      playPremioSound();
+    }
   }
   
   if (winner === 'jugador') {
