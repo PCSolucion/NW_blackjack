@@ -262,7 +262,14 @@ function determineWinner() {
   } else if (winner === 'casa') {
     winnerMessage.textContent = 'La casa gana';
   } else {
-    winnerMessage.textContent = 'Empate';
+    winnerMessage.textContent = '¡Empate!';
+    // Si hay empate, reiniciar el juego automáticamente después de 3 segundos
+    setTimeout(() => {
+      resetGame();
+      setTimeout(() => {
+        autoFlipCards();
+      }, 500);
+    }, 3000);
   }
   
   winnerMessage.style.visibility = 'visible';
