@@ -1,334 +1,386 @@
-class Deck {
-  constructor() {
-    this.deck = [];
-    this.reset(); // Añade 52 cartas a la baraja
-    this.shuffle(); // Baraja las cartas
-  }
-
-  reset() {
-    this.deck = [];
-    const suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
-    const values = ['Ace', 2, 3, 4, 5, 6, 7, 8, 9, 10, 'Jack', 'Queen', 'King'];
-
-    for (let suit of suits) {
-      for (let value of values) {
-        this.deck.push(value + " of " + suit);
-      }
-    }
-  }
-
-  shuffle() {
-    let numberOfCards = this.deck.length;  
-    for (let i = 0; i < numberOfCards; i++) {
-      let j = Math.floor(Math.random() * numberOfCards);
-      let tmp = this.deck[i];
-      this.deck[i] = this.deck[j];
-      this.deck[j] = tmp;
-    }
-  }
-
-  deal() {
-    return this.deck.pop();
-  }
-
-  isEmpty() {
-    return (this.deck.length === 0);
-  }
-
-  length() {
-    return this.deck.length;
-  }
-}
-
+// Clase Card
 class Card {
-  constructor(card) {
-    this.card = card;
-    const cardValues = {
-      "Ace of Hearts": 1, "2 of Hearts": 2, "3 of Hearts": 3, "4 of Hearts": 4, "5 of Hearts": 5, "6 of Hearts": 6, "7 of Hearts": 7, "8 of Hearts": 8, "9 of Hearts": 9, "10 of Hearts": 10, "Jack of Hearts": 10, "Queen of Hearts": 10, "King of Hearts": 10,
-      "Ace of Diamonds": 1, "2 of Diamonds": 2, "3 of Diamonds": 3, "4 of Diamonds": 4, "5 of Diamonds": 5, "6 of Diamonds": 6, "7 of Diamonds": 7, "8 of Diamonds": 8, "9 of Diamonds": 9, "10 of Diamonds": 10, "Jack of Diamonds": 10, "Queen of Diamonds": 10, "King of Diamonds": 10,
-      "Ace of Clubs": 1, "2 of Clubs": 2, "3 of Clubs": 3, "4 of Clubs": 4, "5 of Clubs": 5, "6 of Clubs": 6, "7 of Clubs": 7, "8 of Clubs": 8, "9 of Clubs": 9, "10 of Clubs": 10, "Jack of Clubs": 10, "Queen of Clubs": 10, "King of Clubs": 10,
-      "Ace of Spades": 1, "2 of Spades": 2, "3 of Spades": 3, "4 of Spades": 4, "5 of Spades": 5, "6 of Spades": 6, "7 of Spades": 7, "8 of Spades": 8, "9 of Spades": 9, "10 of Spades": 10, "Jack of Spades": 10, "Queen of Spades": 10, "King of Spades": 10
-    };
-    
-    this.value = cardValues[card];
-    this.suit = card.substring(card.indexOf(" of ") + 4);
+  constructor(cardString) {
+    this.cardString = cardString;
+    this.value = this.calculateValue();
+    this.suit = this.extractSuit();
+    this.isAce = cardString.startsWith("Ace");
+    this.position = this.calculatePosition();
     this.placeHolder = null;
     this.flipped = false;
-    
-    // Manejo especial para los Ases en Blackjack
-    this.isAce = card.startsWith("Ace");
+  }
 
-    // Actualizado para considerar que la primera imagen es el dorso (posición 0)
-    // Y que las cartas empiezan en la posición 1 del sprite
+  calculateValue() {
+    const cardValues = {
+      "Ace": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "10": 10,
+      "Jack": 10, "Queen": 10, "King": 10
+    };
+    const value = this.cardString.split(" of ")[0];
+    return cardValues[value];
+  }
+
+  extractSuit() {
+    return this.cardString.split(" of ")[1];
+  }
+
+  calculatePosition() {
     const suitOrder = {
       'Hearts': 0,
       'Diamonds': 1,
       'Clubs': 2,
       'Spades': 3
     };
-    
-    // +1 para saltar el dorso de la carta que está en la posición 0
-    this.position = 1 + (suitOrder[this.suit] * 13) + (this.value - 1);
+    return 1 + (suitOrder[this.suit] * 13) + (this.value - 1);
   }
 
-  displayCard(placeHolder, flipped = true) {
-    this.placeHolder = document.getElementById(placeHolder);
-    const cardInner = this.placeHolder.querySelector('.card-inner');
-    const cardFront = this.placeHolder.querySelector('.card-front');
-    
-    // Configurar la posición de la imagen frontal
-    cardFront.style.backgroundPositionX = (-120 * this.position) + 'px';
-    
-    this.flipped = flipped;
-    
-    // Aplicar el estado inicial (volteado o no)
-    if (flipped) {
-      cardInner.style.transform = 'rotateY(180deg)';
-    } else {
-      cardInner.style.transform = 'rotateY(0deg)';
-    }
+  getValue() {
+    return this.value;
   }
 
-  flip() {
-    const cardInner = this.placeHolder.querySelector('.card-inner');
-    
-    // Cambiar el estado de la carta
-    if (this.flipped) {
-      cardInner.style.transform = 'rotateY(0deg)';
-      this.flipped = false;
-    } else {
-      cardInner.style.transform = 'rotateY(180deg)';
-      this.flipped = true;
-    }
+  isAceCard() {
+    return this.isAce;
+  }
+
+  getPosition() {
+    return this.position;
   }
 }
 
-// Inicialización
-const deck = new Deck();
-let card1, card2, card3, playerCard1, playerCard2, playerCard3;
-let autoFlipInProgress = false;
+// Clase Deck
+class Deck {
+  constructor() {
+    this.cards = [];
+    this.reset();
+    this.shuffle();
+  }
 
-// Crear elemento de audio para el sonido de premio
-const premioSound = new Audio('https://res.cloudinary.com/pcsolucion/video/upload/v1742121077/premio_bsbuz9.m4a');
-premioSound.preload = 'auto';
+  reset() {
+    this.cards = [];
+    const suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
+    const values = ['Ace', 2, 3, 4, 5, 6, 7, 8, 9, 10, 'Jack', 'Queen', 'King'];
 
-// Iniciar el juego al cargar
-window.onload = function() {
-  deal();
-  setTimeout(() => {
-    autoFlipCards();
-  }, 500);
-};
+    for (const suit of suits) {
+      for (const value of values) {
+        this.cards.push(new Card(`${value} of ${suit}`));
+      }
+    }
+  }
 
-// Función para repartir cartas
-function deal() {
-  if (deck.length() < 6) {
-    deck.reset();
-    deck.shuffle();
-  }  
+  shuffle() {
+    for (let i = this.cards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+    }
+  }
 
-  // Reiniciar el mensaje del ganador
-  const winnerMessage = document.getElementById('winnerMessage');
-  winnerMessage.style.visibility = 'hidden';
+  deal() {
+    if (this.isEmpty()) {
+      throw new Error('No hay más cartas en la baraja');
+    }
+    return this.cards.pop();
+  }
 
-  // Reiniciar los marcadores
-  document.getElementById('houseScore').textContent = '0';
-  document.getElementById('playerScore').textContent = '0';
+  isEmpty() {
+    return this.cards.length === 0;
+  }
 
-  // Reiniciar los premios
-  resetPrizes();
-
-  // Repartir cartas
-  card1 = new Card(deck.deal());
-  card2 = new Card(deck.deal());
-  card3 = new Card(deck.deal());
-  playerCard1 = new Card(deck.deal());
-  playerCard2 = new Card(deck.deal());
-  playerCard3 = new Card(deck.deal());
-
-  // Mostrar cartas boca abajo
-  card1.displayCard("card1", false);  
-  card2.displayCard("card2", false);  
-  card3.displayCard("card3", false);  
-  playerCard1.displayCard("playerCard1", false);  
-  playerCard2.displayCard("playerCard2", false);  
-  playerCard3.displayCard("playerCard3", false);  
+  getRemainingCards() {
+    return this.cards.length;
+  }
 }
 
-// Función para voltear cartas automáticamente
-function autoFlipCards() {
-  autoFlipInProgress = true;
-  
-  // Inicializar los marcadores
-  document.getElementById('playerScore').textContent = '0';
-  document.getElementById('houseScore').textContent = '0';
-  
-  // Voltear cartas de jugador, luego la casa, y finalmente determinar ganador
-  setTimeout(() => {
-    playerCard1.flip();
-    // Actualizar puntuación después de la primera carta
-    setTimeout(() => {
-      document.getElementById('playerScore').textContent = calculateHandValue([playerCard1]);
+// Clase Game
+class Game {
+  constructor() {
+    this.deck = new Deck();
+    this.playerCards = [];
+    this.houseCards = [];
+    this.gameState = {
+      isAutoFlipInProgress: false,
+      playerScore: 0,
+      houseScore: 0
+    };
+  }
+
+  dealNewHand() {
+    if (this.deck.getRemainingCards() < 6) {
+      this.deck.reset();
+      this.deck.shuffle();
+    }
+
+    this.playerCards = [];
+    this.houseCards = [];
+    this.gameState.playerScore = 0;
+    this.gameState.houseScore = 0;
+
+    // Repartir 6 cartas (3 para cada jugador)
+    for (let i = 0; i < 3; i++) {
+      this.playerCards.push(this.deck.deal());
+      this.houseCards.push(this.deck.deal());
+    }
+
+    return {
+      playerCards: [...this.playerCards],
+      houseCards: [...this.houseCards]
+    };
+  }
+
+  calculateHandValue(cards) {
+    let value = 0;
+    let aces = 0;
+
+    for (const card of cards) {
+      if (card.isAceCard()) {
+        aces++;
+        value += 1;
+      } else {
+        value += card.getValue();
+      }
+    }
+
+    // Ajustar el valor de los ases si es beneficioso
+    while (aces > 0 && value + 10 <= 21) {
+      value += 10;
+      aces--;
+    }
+
+    return value;
+  }
+
+  determineWinner() {
+    const playerScore = this.calculateHandValue(this.playerCards);
+    const houseScore = this.calculateHandValue(this.houseCards);
+
+    if (playerScore > 21) {
+      return { winner: 'house', playerScore, houseScore, isBlackjack: false };
+    }
+    if (houseScore > 21) {
+      return { 
+        winner: 'player', 
+        playerScore, 
+        houseScore, 
+        isBlackjack: playerScore === 21 
+      };
+    }
+    if (playerScore > houseScore) {
+      return { 
+        winner: 'player', 
+        playerScore, 
+        houseScore, 
+        isBlackjack: playerScore === 21 
+      };
+    }
+    if (playerScore < houseScore) {
+      return { winner: 'house', playerScore, houseScore, isBlackjack: false };
+    }
+    return { winner: 'tie', playerScore, houseScore, isBlackjack: false };
+  }
+
+  getGameState() {
+    return { ...this.gameState };
+  }
+
+  setAutoFlipState(state) {
+    this.gameState.isAutoFlipInProgress = state;
+  }
+
+  updateScores() {
+    this.gameState.playerScore = this.calculateHandValue(this.playerCards);
+    this.gameState.houseScore = this.calculateHandValue(this.houseCards);
+    return { ...this.gameState };
+  }
+}
+
+// Clase GameUI
+class GameUI {
+  constructor(game) {
+    this.game = game;
+    this.premioSound = new Audio('https://res.cloudinary.com/pcsolucion/video/upload/v1742121077/premio_bsbuz9.m4a');
+    this.premioSound.preload = 'auto';
+    this.currentHand = null;
+    this.initializeEventListeners();
+  }
+
+  initializeEventListeners() {
+    const dealButton = document.getElementById('dealButton');
+    const nextButton = document.getElementById('nextButton');
+
+    if (dealButton) {
+      dealButton.addEventListener('click', () => this.handleDeal());
+    }
+    if (nextButton) {
+      nextButton.addEventListener('click', () => this.handleNext());
+    }
+  }
+
+  handleDeal() {
+    if (this.game.getGameState().isAutoFlipInProgress) return;
+    
+    this.currentHand = this.game.dealNewHand();
+    this.displayCards(this.currentHand.playerCards, this.currentHand.houseCards);
+    this.resetUI();
+    this.startAutoFlip();
+  }
+
+  displayCards(playerCards, houseCards) {
+    // Mostrar cartas del jugador
+    playerCards.forEach((card, index) => {
+      this.displayCard(card, `playerCard${index + 1}`, false);
+    });
+
+    // Mostrar cartas de la casa
+    houseCards.forEach((card, index) => {
+      this.displayCard(card, `card${index + 1}`, false);
+    });
+  }
+
+  displayCard(card, placeHolderId, flipped) {
+    const placeHolder = document.getElementById(placeHolderId);
+    if (!placeHolder) return;
+
+    const cardInner = placeHolder.querySelector('.card-inner');
+    const cardFront = placeHolder.querySelector('.card-front');
+    
+    if (!cardInner || !cardFront) return;
+    
+    cardFront.style.backgroundPositionX = (-120 * card.getPosition()) + 'px';
+    card.placeHolder = placeHolder;
+    card.flipped = flipped;
+    
+    cardInner.style.transform = flipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+  }
+
+  flipCard(card) {
+    if (!card.placeHolder) return;
+    
+    const cardInner = card.placeHolder.querySelector('.card-inner');
+    if (!cardInner) return;
+
+    card.flipped = !card.flipped;
+    cardInner.style.transform = card.flipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+  }
+
+  startAutoFlip() {
+    if (!this.currentHand) return;
+
+    this.game.setAutoFlipState(true);
+    
+    // Secuencia de volteo de cartas
+    this.flipCardSequence(this.currentHand.playerCards, 'playerScore', () => {
+      this.flipCardSequence(this.currentHand.houseCards, 'houseScore', () => {
+        this.handleGameEnd();
+      });
+    });
+  }
+
+  flipCardSequence(cards, scoreId, callback) {
+    let currentIndex = 0;
+    
+    const flipNext = () => {
+      if (currentIndex >= cards.length) {
+        callback();
+        return;
+      }
+
+      this.flipCard(cards[currentIndex]);
+      this.updateScore(scoreId, cards.slice(0, currentIndex + 1));
       
-      playerCard2.flip();
-      // Actualizar puntuación después de la segunda carta
-      setTimeout(() => {
-        document.getElementById('playerScore').textContent = calculateHandValue([playerCard1, playerCard2]);
-        
-        playerCard3.flip();
-        // Actualizar puntuación después de la tercera carta
-        setTimeout(() => {
-          document.getElementById('playerScore').textContent = calculateHandValue([playerCard1, playerCard2, playerCard3]);
-          
-          // Comenzar a voltear cartas de la casa
-          setTimeout(() => {
-            card1.flip();
-            // Actualizar puntuación después de la primera carta
-            setTimeout(() => {
-              document.getElementById('houseScore').textContent = calculateHandValue([card1]);
-              
-              card2.flip();
-              // Actualizar puntuación después de la segunda carta
-              setTimeout(() => {
-                document.getElementById('houseScore').textContent = calculateHandValue([card1, card2]);
-                
-                card3.flip();
-                // Actualizar puntuación después de la tercera carta
-                setTimeout(() => {
-                  document.getElementById('houseScore').textContent = calculateHandValue([card1, card2, card3]);
-                  
-                  // Determinar ganador
-                  setTimeout(() => {
-                    determineWinner();
-                    autoFlipInProgress = false;
-                  }, 1000);
-                }, 500);
-              }, 1200);
-            }, 500);
-          }, 1500);
-        }, 500);
-      }, 1200);
-    }, 500);
-  }, 800);
-}
+      currentIndex++;
+      setTimeout(flipNext, currentIndex === cards.length ? 1000 : 500);
+    };
 
-// Función para determinar el ganador
-function determineWinner() {
-  let playerScore = calculateHandValue([playerCard1, playerCard2, playerCard3]);
-  let houseScore = calculateHandValue([card1, card2, card3]);
-  let winnerMessage = document.getElementById('winnerMessage');
-  let winner = '';
-  
-  // Resetear animaciones de premios
-  resetPrizes();
-  
-  if (playerScore > 21) {
-    winner = 'casa';
-  } else if (houseScore > 21) {
-    winner = 'jugador';
-    // Verificar si el jugador tiene 21 puntos
-    if (playerScore === 21) {
-      document.getElementById('prize21').classList.add('active');
-    } else {
-      document.getElementById('prizeNormal').classList.add('active');
-    }
-    // Reproducir sonido de premio
-    playPremioSound();
-  } else if (playerScore > houseScore) {
-    winner = 'jugador';
-    if (playerScore === 21) {
-      document.getElementById('prize21').classList.add('active');
-      // Reproducir sonido de premio
-      playPremioSound();
-    } else {
-      document.getElementById('prizeNormal').classList.add('active');
-      // Reproducir sonido de premio
-      playPremioSound();
-    }
-  } else if (playerScore < houseScore) {
-    winner = 'casa';
-  } else {
-    // Empate - verificar si ambos tienen 21 puntos
-    winner = 'empate';
-    if (playerScore === 21) {
-      document.getElementById('prize21').classList.add('active');
-      // Reproducir sonido de premio
-      playPremioSound();
+    setTimeout(flipNext, 800);
+  }
+
+  updateScore(scoreId, cards) {
+    const score = this.game.calculateHandValue(cards);
+    const scoreElement = document.getElementById(scoreId);
+    if (scoreElement) {
+      scoreElement.textContent = score;
     }
   }
-  
-  if (winner === 'jugador') {
-    winnerMessage.textContent = '¡Has ganado!';
-  } else if (winner === 'casa') {
-    winnerMessage.textContent = 'La casa gana';
-  } else {
-    winnerMessage.textContent = '¡Empate!';
-    // Si hay empate, reiniciar el juego automáticamente después de 3 segundos
-    setTimeout(() => {
-      resetGame();
-      setTimeout(() => {
-        autoFlipCards();
-      }, 500);
-    }, 3000);
-  }
-  
-  winnerMessage.style.visibility = 'visible';
-  
-  // Ya no reiniciamos automáticamente el juego
-  autoFlipInProgress = false;
-}
 
-// Función para calcular el valor de la mano
-function calculateHandValue(cards) {
-  let sum = 0;
-  let aces = 0;
-  
-  // Primero sumar valores no-ases
-  for (let card of cards) {
-    if (card.isAce) {
-      aces++;
-    } else {
-      sum += card.value;
+  handleGameEnd() {
+    const result = this.game.determineWinner();
+    this.displayWinner(result);
+    this.game.setAutoFlipState(false);
+  }
+
+  displayWinner(result) {
+    const winnerMessage = document.getElementById('winnerMessage');
+    if (!winnerMessage) return;
+
+    winnerMessage.style.visibility = 'visible';
+    
+    if (result.winner === 'player') {
+      const prizeElement = result.isBlackjack ? 
+        document.getElementById('prize21') : 
+        document.getElementById('prizeNormal');
+      
+      if (prizeElement) {
+        prizeElement.classList.add('active');
+      }
+      this.playPremioSound();
+    }
+    
+    winnerMessage.textContent = this.getWinnerMessage(result);
+  }
+
+  getWinnerMessage(result) {
+    const messages = {
+      player: '¡Ganaste!',
+      house: 'La casa gana',
+      tie: 'Empate'
+    };
+    return messages[result.winner] || 'Error: resultado desconocido';
+  }
+
+  resetUI() {
+    const elements = {
+      winnerMessage: document.getElementById('winnerMessage'),
+      houseScore: document.getElementById('houseScore'),
+      playerScore: document.getElementById('playerScore'),
+      prize21: document.getElementById('prize21'),
+      prizeNormal: document.getElementById('prizeNormal')
+    };
+
+    if (elements.winnerMessage) {
+      elements.winnerMessage.style.visibility = 'hidden';
+    }
+    if (elements.houseScore) {
+      elements.houseScore.textContent = '0';
+    }
+    if (elements.playerScore) {
+      elements.playerScore.textContent = '0';
+    }
+    if (elements.prize21) {
+      elements.prize21.classList.remove('active');
+    }
+    if (elements.prizeNormal) {
+      elements.prizeNormal.classList.remove('active');
     }
   }
-  
-  // Luego añadir ases
-  for (let i = 0; i < aces; i++) {
-    if (sum + 11 <= 21) {
-      sum += 11;
-    } else {
-      sum += 1;
+
+  playPremioSound() {
+    if (this.premioSound) {
+      this.premioSound.currentTime = 0;
+      this.premioSound.play().catch(error => 
+        console.log('Error reproduciendo sonido:', error)
+      );
     }
   }
+
+  handleNext() {
+    if (this.game.getGameState().isAutoFlipInProgress) return;
+    this.handleDeal();
+  }
+}
+
+// Inicializar el juego cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+  const game = new Game();
+  const gameUI = new GameUI(game);
   
-  return sum;
-}
-
-// Función para reiniciar el juego
-function resetGame() {
-  deal();
-  document.getElementById('winnerMessage').style.visibility = 'hidden';
-}
-
-// Función para reiniciar los premios
-function resetPrizes() {
-  document.querySelectorAll('.prize-row').forEach(row => {
-    row.classList.remove('active');
-  });
-}
-
-// Función para reproducir el sonido de premio
-function playPremioSound() {
-  premioSound.currentTime = 0; // Reiniciar el sonido
-  premioSound.play().catch(error => {
-    console.log('Error al reproducir sonido:', error);
-  });
-}
-
-// Función para manejar el botón (ya no se usará, se reinicia automáticamente)
-function nextStep(btn) {
-  resetGame();
-  setTimeout(() => {
-    autoFlipCards();
-  }, 500);
-}
+  // Iniciar el primer juego automáticamente
+  gameUI.handleDeal();
+});
