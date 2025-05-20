@@ -1,38 +1,89 @@
 class GameUI {
   constructor(game) {
-    console.log('Inicializando GameUI...');
+    if (!game) {
+      throw new Error('Se requiere una instancia de Game para inicializar GameUI');
+    }
+
+    console.log('=== INICIO DE INICIALIZACIÓN DE GAMEUI ===');
     this.game = game;
-    this.premioSound = new Audio('https://res.cloudinary.com/pcsolucion/video/upload/v1742121077/premio_bsbuz9.m4a');
-    this.premioSound.preload = 'auto';
+    
+    // Inicializar el sonido
+    try {
+      this.premioSound = new Audio('https://res.cloudinary.com/pcsolucion/video/upload/v1742121077/premio_bsbuz9.m4a');
+      this.premioSound.preload = 'auto';
+    } catch (error) {
+      console.warn('No se pudo inicializar el sonido:', error);
+      this.premioSound = null;
+    }
+
     this.currentHand = null;
-    this.initializeEventListeners();
-    console.log('GameUI inicializada correctamente');
+    
+    // Verificar elementos necesarios
+    this.verifyRequiredElements();
+    
+    // Configurar event listeners
+    this.setupEventListeners();
+
+    // Mostrar el historial inicial
+    console.log('Mostrando historial inicial...');
+    this.updateResultsHistory();
+    
+    console.log('=== FIN DE INICIALIZACIÓN DE GAMEUI ===');
   }
 
-  initializeEventListeners() {
+  verifyRequiredElements() {
+    const requiredElements = [
+      'dealButton',
+      'nextButton',
+      'houseScore',
+      'playerScore',
+      'card1',
+      'card2',
+      'card3',
+      'playerCard1',
+      'playerCard2',
+      'playerCard3',
+      'winnerMessage',
+      'resultsContainer'
+    ];
+
+    const missingElements = requiredElements.filter(id => !document.getElementById(id));
+    
+    if (missingElements.length > 0) {
+      console.error('Elementos faltantes:', missingElements);
+      throw new Error('Faltan elementos necesarios en el DOM: ' + missingElements.join(', '));
+    }
+  }
+
+  setupEventListeners() {
     console.log('Configurando event listeners...');
     const dealButton = document.getElementById('dealButton');
     const nextButton = document.getElementById('nextButton');
 
-    if (!dealButton || !nextButton) {
-      console.error('No se encontraron los botones necesarios');
-      return;
-    }
+    // Limpiar cualquier listener existente
+    dealButton.onclick = null;
+    nextButton.onclick = null;
 
-    // Remover listeners existentes para evitar duplicados
-    dealButton.removeEventListener('click', this.handleDeal);
-    nextButton.removeEventListener('click', this.handleNext);
-
-    // Agregar nuevos listeners
-    dealButton.addEventListener('click', () => {
+    // Configurar nuevos listeners
+    dealButton.onclick = () => {
       console.log('Botón de repartir clickeado');
-      this.handleDeal();
-    });
+      try {
+        this.handleDeal();
+      } catch (error) {
+        console.error('Error al manejar el reparto:', error);
+        alert('Error al repartir las cartas. Por favor, intenta de nuevo.');
+      }
+    };
 
-    nextButton.addEventListener('click', () => {
+    nextButton.onclick = () => {
       console.log('Botón siguiente clickeado');
-      this.handleNext();
-    });
+      try {
+        this.handleNext();
+      } catch (error) {
+        console.error('Error al manejar siguiente:', error);
+        alert('Error al pasar a la siguiente mano. Por favor, intenta de nuevo.');
+      }
+    };
 
     console.log('Event listeners configurados correctamente');
   }
@@ -63,13 +114,21 @@ class GameUI {
       // Mostrar cartas del jugador
       playerCards.forEach((card, index) => {
         console.log(`Mostrando carta del jugador ${index + 1}:`, card);
-        this.displayCard(card, `playerCard${index + 1}`, false);
+        const cardElement = document.getElementById(`playerCard${index + 1}`);
+        if (!cardElement) {
+          throw new Error(`No se encontró el elemento playerCard${index + 1}`);
+        }
+        this.displayCard(card, cardElement, false);
       });
 
       // Mostrar cartas de la casa
       houseCards.forEach((card, index) => {
         console.log(`Mostrando carta de la casa ${index + 1}:`, card);
-        this.displayCard(card, `card${index + 1}`, false);
+        const cardElement = document.getElementById(`card${index + 1}`);
+        if (!cardElement) {
+          throw new Error(`No se encontró el elemento card${index + 1}`);
+        }
+        this.displayCard(card, cardElement, false);
       });
     } catch (error) {
       console.error('Error al mostrar las cartas:', error);
@@ -77,49 +136,51 @@ class GameUI {
     }
   }
 
-  displayCard(card, placeHolderId, flipped) {
-    const placeHolder = document.getElementById(placeHolderId);
-    if (!placeHolder) {
-      console.error(`No se encontró el elemento con id ${placeHolderId}`);
-      return;
+  displayCard(card, cardElement, flipped) {
+    if (!cardElement) {
+      throw new Error('Elemento de carta no encontrado');
     }
 
-    const cardInner = placeHolder.querySelector('.card-inner');
-    const cardFront = placeHolder.querySelector('.card-front');
+    const cardInner = cardElement.querySelector('.card-inner');
+    const cardFront = cardElement.querySelector('.card-front');
     
     if (!cardInner || !cardFront) {
-      console.error(`No se encontraron los elementos necesarios en ${placeHolderId}`);
-      return;
+      throw new Error('No se encontraron los elementos necesarios en la carta');
     }
+
+    // Calcular la posición en el sprite de cartas
+    const position = card.calculatePosition();
+    console.log(`Posición calculada para carta ${card.toString()}: ${position}`);
     
-    cardFront.style.backgroundPositionX = (-120 * card.getPosition()) + 'px';
-    card.placeHolder = placeHolder;
-    card.flipped = flipped;
+    // Aplicar la posición al fondo de la carta
+    cardFront.style.backgroundPositionX = `${-120 * position}px`;
     
+    // Aplicar el estado de volteo
     cardInner.style.transform = flipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    
+    // Guardar referencia a la carta en el elemento
+    cardElement.card = card;
+    cardElement.flipped = flipped;
   }
 
-  flipCard(card) {
-    if (!card.placeHolder) {
-      console.error('La carta no tiene un placeHolder asignado');
-      return;
+  flipCard(cardElement) {
+    if (!cardElement || !cardElement.card) {
+      throw new Error('Elemento de carta inválido para voltear');
     }
     
-    const cardInner = card.placeHolder.querySelector('.card-inner');
+    const cardInner = cardElement.querySelector('.card-inner');
     if (!cardInner) {
-      console.error('No se encontró el elemento card-inner');
-      return;
+      throw new Error('No se encontró el elemento card-inner');
     }
 
-    card.flipped = !card.flipped;
-    cardInner.style.transform = card.flipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    cardElement.flipped = !cardElement.flipped;
+    cardInner.style.transform = cardElement.flipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
   }
 
   startAutoFlip() {
     console.log('Iniciando auto flip...');
     if (!this.currentHand) {
-      console.error('No hay una mano actual para voltear');
-      return;
+      throw new Error('No hay una mano actual para voltear');
     }
 
     try {
@@ -137,7 +198,7 @@ class GameUI {
     } catch (error) {
       console.error('Error en auto flip:', error);
       this.game.setAutoFlipState(false);
-      alert('Error al voltear las cartas. Por favor, intenta de nuevo.');
+      throw error;
     }
   }
 
@@ -150,7 +211,17 @@ class GameUI {
         return;
       }
 
-      this.flipCard(cards[currentIndex]);
+      const cardElement = document.getElementById(
+        scoreId === 'playerScore' ? `playerCard${currentIndex + 1}` : `card${currentIndex + 1}`
+      );
+
+      if (!cardElement) {
+        console.error(`No se encontró el elemento para la carta ${currentIndex + 1}`);
+        callback();
+        return;
+      }
+
+      this.flipCard(cardElement);
       this.updateScore(scoreId, cards.slice(0, currentIndex + 1));
       
       currentIndex++;
@@ -169,9 +240,109 @@ class GameUI {
   }
 
   handleGameEnd() {
-    const result = this.game.determineWinner();
-    this.displayWinner(result);
-    this.game.setAutoFlipState(false);
+    console.log('=== INICIO handleGameEnd ===');
+    try {
+      const result = this.game.determineWinner();
+      console.log('Resultado del juego obtenido:', result);
+      
+      // Actualizar la UI
+      this.displayWinner(result);
+      console.log('Mensaje de ganador mostrado');
+      
+      // Actualizar el historial
+      console.log('Intentando actualizar historial...');
+      this.updateResultsHistory();
+      console.log('Historial actualizado');
+      
+      this.game.setAutoFlipState(false);
+      console.log('=== FIN handleGameEnd ===');
+    } catch (error) {
+      console.error('Error en handleGameEnd:', error);
+      this.game.setAutoFlipState(false);
+    }
+  }
+
+  updateResultsHistory() {
+    console.log('=== INICIO updateResultsHistory ===');
+    const resultsContainer = document.getElementById('resultsContainer');
+    if (!resultsContainer) {
+      console.error('ERROR: No se encontró el contenedor de resultados');
+      return;
+    }
+    console.log('Contenedor de resultados encontrado');
+
+    const results = this.game.getLastResults();
+    console.log('Resultados obtenidos del juego:', results);
+
+    // Limpiar el contenedor
+    console.log('Limpiando contenedor de resultados');
+    resultsContainer.innerHTML = '';
+
+    if (!results || results.length === 0) {
+      console.log('No hay resultados para mostrar, agregando mensaje por defecto');
+      const emptyMessage = document.createElement('div');
+      emptyMessage.className = 'result-item empty-message';
+      emptyMessage.innerHTML = `
+        <div class="result-details">
+          <i class="fas fa-history"></i>
+          <span>No hay resultados aún</span>
+        </div>
+      `;
+      resultsContainer.appendChild(emptyMessage);
+      console.log('=== FIN updateResultsHistory (sin resultados) ===');
+      return;
+    }
+
+    console.log('Comenzando a renderizar resultados...');
+    results.forEach((result, index) => {
+      if (!result || !result.winner) {
+        console.error('Resultado inválido encontrado:', result);
+        return;
+      }
+
+      console.log(`Renderizando resultado ${index + 1}:`, result);
+      
+      const resultItem = document.createElement('div');
+      resultItem.className = `result-item ${result.winner}`;
+
+      const icon = document.createElement('i');
+      icon.className = `result-icon ${result.winner}`;
+      
+      // Asignar icono y color según el resultado
+      if (result.winner === 'player') {
+        icon.className += ' fas fa-trophy';
+        icon.style.color = '#4CAF50';
+      } else if (result.winner === 'house') {
+        icon.className += ' fas fa-times';
+        icon.style.color = '#f44336';
+      } else {
+        icon.className += ' fas fa-equals';
+        icon.style.color = '#ffd700';
+      }
+
+      const details = document.createElement('div');
+      details.className = 'result-details';
+
+      const score = document.createElement('div');
+      score.className = 'result-score';
+      
+      // Agregar indicador de Blackjack si aplica
+      const blackjackIndicator = result.isBlackjack ? ' <span class="blackjack-indicator">♠</span>' : '';
+      score.innerHTML = `${result.playerScore}${blackjackIndicator} <span>vs</span> ${result.houseScore}`;
+
+      details.appendChild(score);
+      resultItem.appendChild(icon);
+      resultItem.appendChild(details);
+      resultsContainer.appendChild(resultItem);
+      console.log(`Resultado ${index + 1} agregado al DOM`);
+    });
+
+    // Asegurar que el contenedor sea visible
+    resultsContainer.style.display = 'block';
+    resultsContainer.style.visibility = 'visible';
+    resultsContainer.style.opacity = '1';
+
+    console.log('=== FIN updateResultsHistory ===');
   }
 
   displayWinner(result) {
@@ -245,6 +416,4 @@ class GameUI {
     if (this.game.getGameState().isAutoFlipInProgress) return;
     this.handleDeal();
   }
-}
-
-export default GameUI; 
+} 

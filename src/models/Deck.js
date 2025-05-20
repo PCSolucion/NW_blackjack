@@ -1,34 +1,40 @@
-import Card from './Card.js';
-
 class Deck {
   constructor() {
     this.cards = [];
-    this.reset();
-    this.shuffle();
+    this.initializeDeck();
   }
 
-  reset() {
+  initializeDeck() {
+    const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+    const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    
+    // Limpiar el array de cartas
     this.cards = [];
-    const suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
-    const values = ['Ace', 2, 3, 4, 5, 6, 7, 8, 9, 10, 'Jack', 'Queen', 'King'];
-
-    for (const suit of suits) {
-      for (const value of values) {
-        this.cards.push(new Card(`${value} of ${suit}`));
+    
+    // Crear todas las cartas
+    for (let suit of suits) {
+      for (let value of values) {
+        this.cards.push(new Card(suit, value));
       }
     }
   }
 
   shuffle() {
+    console.log('Barajando la baraja...');
+    // Usar el algoritmo Fisher-Yates para un barajado más aleatorio
     for (let i = this.cards.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      // Usar Math.random() con una semilla basada en el tiempo actual
+      const j = Math.floor((Math.random() * (i + 1)) * (Date.now() % 1000) / 1000);
       [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
     }
+    console.log('Baraja barajada. Cartas restantes:', this.cards.length);
   }
 
-  deal() {
-    if (this.isEmpty()) {
-      throw new Error('No hay más cartas en la baraja');
+  drawCard() {
+    if (this.cards.length === 0) {
+      console.log('Baraja vacía, reinicializando...');
+      this.initializeDeck();
+      this.shuffle();
     }
     return this.cards.pop();
   }
@@ -40,6 +46,4 @@ class Deck {
   getRemainingCards() {
     return this.cards.length;
   }
-}
-
-export default Deck; 
+} 

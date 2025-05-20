@@ -1,26 +1,25 @@
-import Deck from './Deck.js';
-import Card from './Card.js';
-
 class Game {
   constructor() {
     console.log('Inicializando Game...');
     this.deck = new Deck();
+    this.deck.shuffle(); // Asegurar que la baraja esté barajada al inicio
     this.playerCards = [];
     this.houseCards = [];
     this.gameState = {
       isAutoFlipInProgress: false,
-      playerScore: 0,
-      houseScore: 0
+      currentHand: null
     };
+    this.lastResults = this.loadResults(); // Cargar resultados guardados
     console.log('Game inicializado correctamente');
   }
 
   dealNewHand() {
     console.log('Repartiendo nueva mano...');
     try {
+      // Verificar si necesitamos una nueva baraja
       if (this.deck.getRemainingCards() < 6) {
-        console.log('Reiniciando baraja...');
-        this.deck.reset();
+        console.log('Creando nueva baraja...');
+        this.deck = new Deck();
         this.deck.shuffle();
       }
 
@@ -31,8 +30,8 @@ class Game {
 
       // Repartir 6 cartas (3 para cada jugador)
       for (let i = 0; i < 3; i++) {
-        const playerCard = this.deck.deal();
-        const houseCard = this.deck.deal();
+        const playerCard = this.deck.drawCard();
+        const houseCard = this.deck.drawCard();
         
         if (!playerCard || !houseCard) {
           throw new Error('Error al repartir las cartas');
@@ -41,7 +40,7 @@ class Game {
         this.playerCards.push(playerCard);
         this.houseCards.push(houseCard);
         
-        console.log(`Carta ${i + 1} repartida - Jugador: ${playerCard.cardString}, Casa: ${houseCard.cardString}`);
+        console.log(`Carta ${i + 1} repartida - Jugador: ${playerCard.toString()}, Casa: ${houseCard.toString()}`);
       }
 
       const hand = {
@@ -50,6 +49,7 @@ class Game {
       };
 
       console.log('Mano repartida correctamente:', hand);
+      this.gameState.currentHand = hand;
       return hand;
 
     } catch (error) {
@@ -71,15 +71,17 @@ class Game {
 
         if (card.isAceCard()) {
           aces++;
-          value += 1;
+          value += 11;
+        } else if (['J', 'Q', 'K'].includes(card.value)) {
+          value += 10;
         } else {
-          value += card.getValue();
+          value += parseInt(card.value);
         }
       }
 
       // Ajustar el valor de los ases si es beneficioso
-      while (aces > 0 && value + 10 <= 21) {
-        value += 10;
+      while (value > 21 && aces > 0) {
+        value -= 10;
         aces--;
       }
 
@@ -94,40 +96,116 @@ class Game {
   determineWinner() {
     console.log('Determinando ganador...');
     try {
-      const playerScore = this.calculateHandValue(this.playerCards);
-      const houseScore = this.calculateHandValue(this.houseCards);
+      const { playerCards, houseCards } = this.gameState.currentHand;
+      const playerScore = this.calculateHandValue(playerCards);
+      const houseScore = this.calculateHandValue(houseCards);
+
+      // Actualizar los scores en el estado del juego
+      this.gameState.playerScore = playerScore;
+      this.gameState.houseScore = houseScore;
 
       console.log(`Puntuaciones - Jugador: ${playerScore}, Casa: ${houseScore}`);
 
-      let result;
+      let winner;
+      let isBlackjack = false;
+
       if (playerScore > 21) {
-        result = { winner: 'house', playerScore, houseScore, isBlackjack: false };
+        winner = 'house';
       } else if (houseScore > 21) {
-        result = { 
-          winner: 'player', 
-          playerScore, 
-          houseScore, 
-          isBlackjack: playerScore === 21 
-        };
-      } else if (playerScore > houseScore) {
-        result = { 
-          winner: 'player', 
-          playerScore, 
-          houseScore, 
-          isBlackjack: playerScore === 21 
-        };
-      } else if (playerScore < houseScore) {
-        result = { winner: 'house', playerScore, houseScore, isBlackjack: false };
+        winner = 'player';
+      } else if (playerScore === houseScore) {
+        winner = 'tie';
       } else {
-        result = { winner: 'tie', playerScore, houseScore, isBlackjack: false };
+        winner = playerScore > houseScore ? 'player' : 'house';
       }
 
-      console.log('Ganador determinado:', result);
+      // Verificar Blackjack
+      if (winner === 'player' && playerCards.length === 2 && playerScore === 21) {
+        isBlackjack = true;
+      }
+
+      const result = {
+        winner,
+        playerScore,
+        houseScore,
+        isBlackjack,
+        timestamp: new Date().getTime() // Agregar timestamp para debugging
+      };
+
+      // Agregar el resultado al historial
+      console.log('Agregando resultado al historial:', result);
+      this.addResult(result);
+
+      // Verificar que el resultado se agregó correctamente
+      console.log('Estado actual del historial:', this.lastResults);
+      console.log('Número total de resultados:', this.lastResults.length);
+
       return result;
     } catch (error) {
       console.error('Error al determinar ganador:', error);
       return { winner: 'error', playerScore: 0, houseScore: 0, isBlackjack: false };
     }
+  }
+
+  addResult(result) {
+    if (!result || !result.winner) {
+      console.error('Intento de agregar resultado inválido:', result);
+      return;
+    }
+
+    console.log('Agregando nuevo resultado:', result);
+    
+    // Crear una copia del resultado para evitar referencias
+    const resultCopy = {
+      winner: result.winner,
+      playerScore: result.playerScore,
+      houseScore: result.houseScore,
+      isBlackjack: result.isBlackjack,
+      timestamp: result.timestamp || new Date().getTime()
+    };
+
+    // Agregar al inicio del array
+    this.lastResults.unshift(resultCopy);
+    
+    // Mantener solo los últimos 5 resultados
+    if (this.lastResults.length > 5) {
+      this.lastResults.pop();
+    }
+
+    // Guardar resultados en localStorage
+    this.saveResults();
+
+    console.log('Historial actualizado. Total de resultados:', this.lastResults.length);
+    console.log('Contenido actual del historial:', this.lastResults);
+  }
+
+  saveResults() {
+    try {
+      localStorage.setItem('blackjackResults', JSON.stringify(this.lastResults));
+      console.log('Resultados guardados en localStorage');
+    } catch (error) {
+      console.error('Error al guardar resultados:', error);
+    }
+  }
+
+  loadResults() {
+    try {
+      const savedResults = localStorage.getItem('blackjackResults');
+      if (savedResults) {
+        const results = JSON.parse(savedResults);
+        console.log('Resultados cargados de localStorage:', results);
+        return results;
+      }
+    } catch (error) {
+      console.error('Error al cargar resultados:', error);
+    }
+    return [];
+  }
+
+  getLastResults() {
+    console.log('Obteniendo últimos resultados. Total:', this.lastResults.length);
+    // Devolver una copia profunda del array
+    return this.lastResults.map(result => ({...result}));
   }
 
   getGameState() {
@@ -150,6 +228,4 @@ class Game {
       return this.gameState;
     }
   }
-}
-
-export default Game; 
+} 

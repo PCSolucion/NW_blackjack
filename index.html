@@ -74,9 +74,9 @@
                 <div class="prize-row" id="prize21">
                     <div class="prize-container">
                         <div class="prize-details">
-                            <span class="prize-quantity">2x</span>
-                            <img src="./images/goldenscarab.png" alt="Escarabajo de Oro" class="prize-icon">
-                            <span class="prize-name">Escarabajo de Oro</span>
+                            <span class="prize-quantity">50x</span>
+                            <div class="prize-icon"></div>
+                            <span class="prize-name">Infused Potion</span>
                         </div>
                         <div class="prize-condition">Victoria con 21 puntos</div>
                     </div>
@@ -84,9 +84,9 @@
                 <div class="prize-row" id="prizeNormal">
                     <div class="prize-container">
                         <div class="prize-details">
-                            <span class="prize-quantity">1x</span>
-                            <img src="./images/goldenscarab.png" alt="Escarabajo de Oro" class="prize-icon">
-                            <span class="prize-name">Escarabajo de Oro</span>
+                            <span class="prize-quantity">21x</span>
+                            <div class="prize-icon"></div>
+                            <span class="prize-name">Infused Potion</span>
                         </div>
                         <div class="prize-condition">Victoria normal</div>
                     </div>
@@ -101,17 +101,91 @@
 
             <!-- Controles -->
             <div class="controls">
-                <button id="dealButton" class="game-button">
+                <button id="dealButton" class="game-button" type="button">
                     <i class="fas fa-play"></i> Repartir
                 </button>
-                <button id="nextButton" class="game-button">
+                <button id="nextButton" class="game-button" type="button">
                     <i class="fas fa-forward"></i> Siguiente
                 </button>
+            </div>
+
+            <!-- Historial de resultados -->
+            <div class="results-history">
+                <h3><i class="fas fa-history"></i> Últimos Resultados</h3>
+                <div id="resultsContainer" class="results-container" style="display: block; visibility: visible;">
+                    <div class="result-item">
+                        <div class="result-details">
+                            <span>No hay resultados aún</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-    <script src="script.js"></script>
+    <script defer src="src/models/Card.js"></script>
+    <script defer src="src/models/Deck.js"></script>
+    <script defer src="src/models/Game.js"></script>
+    <script defer src="src/ui/GameUI.js"></script>
+    <script>
+        // Esperar a que todos los scripts estén cargados
+        window.addEventListener('load', function() {
+            console.log('=== INICIO DE CARGA ===');
+            
+            // Verificar que las clases necesarias estén disponibles
+            if (typeof Card === 'undefined') {
+                console.error('Error: La clase Card no está definida');
+                alert('Error: No se pudo cargar el juego. Por favor, recarga la página.');
+                return;
+            }
+
+            if (typeof Deck === 'undefined') {
+                console.error('Error: La clase Deck no está definida');
+                alert('Error: No se pudo cargar el juego. Por favor, recarga la página.');
+                return;
+            }
+
+            if (typeof Game === 'undefined') {
+                console.error('Error: La clase Game no está definida');
+                alert('Error: No se pudo cargar el juego. Por favor, recarga la página.');
+                return;
+            }
+
+            if (typeof GameUI === 'undefined') {
+                console.error('Error: La clase GameUI no está definida');
+                alert('Error: No se pudo cargar la interfaz del juego. Por favor, recarga la página.');
+                return;
+            }
+
+            try {
+                console.log('Creando instancia del juego...');
+                const game = new Game();
+                console.log('Juego creado exitosamente');
+
+                console.log('Creando instancia de la UI...');
+                const gameUI = new GameUI(game);
+                console.log('UI creada exitosamente');
+
+                // Verificar que los botones existan
+                const dealButton = document.getElementById('dealButton');
+                const nextButton = document.getElementById('nextButton');
+
+                if (!dealButton || !nextButton) {
+                    throw new Error('No se encontraron los botones necesarios');
+                }
+
+                console.log('Iniciando primer juego...');
+                // Pequeño retraso para asegurar que todo esté listo
+                setTimeout(() => {
+                    gameUI.handleDeal();
+                }, 100);
+
+            } catch (error) {
+                console.error('Error durante la inicialización:', error);
+                alert('Error al inicializar el juego: ' + error.message);
+            }
+        });
+    </script>
 </body>
 </html>
