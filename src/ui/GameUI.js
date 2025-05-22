@@ -7,13 +7,19 @@ class GameUI {
     console.log('=== INICIO DE INICIALIZACIÓN DE GAMEUI ===');
     this.game = game;
     
-    // Inicializar el sonido
+    // Inicializar los sonidos
     try {
       this.premioSound = new Audio('https://res.cloudinary.com/pcsolucion/video/upload/v1742121077/premio_bsbuz9.m4a');
       this.premioSound.preload = 'auto';
+      
+      // Sonido de carta
+      this.cardSound = new Audio('sounds/sonidocarta.mp3');
+      this.cardSound.preload = 'auto';
+      this.cardSound.volume = 0.5; // Ajustar volumen al 50%
     } catch (error) {
       console.warn('No se pudo inicializar el sonido:', error);
       this.premioSound = null;
+      this.cardSound = null;
     }
 
     this.currentHand = null;
@@ -111,24 +117,55 @@ class GameUI {
   displayCards(playerCards, houseCards) {
     console.log('Mostrando cartas...');
     try {
-      // Mostrar cartas del jugador
+      // Reiniciar todas las cartas para el nuevo reparto
+      document.querySelectorAll('.card').forEach(card => {
+        card.classList.remove('dealing', 'player-dealing', 'house-dealing');
+        const cardFront = card.querySelector('.card-front');
+        if (cardFront) {
+          cardFront.classList.remove('win-effect', 'lose-effect');
+        }
+      });
+
+      // Mostrar cartas del jugador con retraso para la animación
       playerCards.forEach((card, index) => {
         console.log(`Mostrando carta del jugador ${index + 1}:`, card);
         const cardElement = document.getElementById(`playerCard${index + 1}`);
         if (!cardElement) {
           throw new Error(`No se encontró el elemento playerCard${index + 1}`);
         }
-        this.displayCard(card, cardElement, false);
+        
+        // Limpiar estilos y aplicar animación
+        cardElement.style.opacity = '0';
+        
+        // Retrasar cada carta para crear secuencia
+        setTimeout(() => {
+          this.displayCard(card, cardElement, false);
+          cardElement.classList.add('dealing', 'player-dealing');
+          cardElement.style.opacity = '1';
+          cardElement.style.animationDelay = `${index * 0.2}s`;
+          // Ya no reproducimos sonido durante el reparto
+        }, 300 + index * 200); // Pequeño retraso inicial + incremento por carta
       });
 
-      // Mostrar cartas de la casa
+      // Mostrar cartas de la casa con retraso
       houseCards.forEach((card, index) => {
         console.log(`Mostrando carta de la casa ${index + 1}:`, card);
         const cardElement = document.getElementById(`card${index + 1}`);
         if (!cardElement) {
           throw new Error(`No se encontró el elemento card${index + 1}`);
         }
-        this.displayCard(card, cardElement, false);
+        
+        // Limpiar estilos y aplicar animación
+        cardElement.style.opacity = '0';
+        
+        // Retrasar cada carta para crear secuencia después de las del jugador
+        setTimeout(() => {
+          this.displayCard(card, cardElement, false);
+          cardElement.classList.add('dealing', 'house-dealing');
+          cardElement.style.opacity = '1';
+          cardElement.style.animationDelay = `${index * 0.2}s`;
+          // Ya no reproducimos sonido durante el reparto
+        }, 1200 + index * 200); // Retraso mayor para comenzar después del jugador
       });
     } catch (error) {
       console.error('Error al mostrar las cartas:', error);
@@ -198,14 +235,18 @@ class GameUI {
       this.game.setAutoFlipState(true);
       console.log('Estado de auto flip actualizado');
       
-      // Secuencia de volteo de cartas
-      this.flipCardSequence(this.currentHand.playerCards, 'playerScore', () => {
-        console.log('Secuencia de cartas del jugador completada');
-        this.flipCardSequence(this.currentHand.houseCards, 'houseScore', () => {
-          console.log('Secuencia de cartas de la casa completada');
-          this.handleGameEnd();
+      // Esperar a que terminen las animaciones de reparto antes de iniciar el volteo
+      // 2000ms para dar tiempo a que todas las cartas terminen de repartirse
+      setTimeout(() => {
+        // Secuencia de volteo de cartas
+        this.flipCardSequence(this.currentHand.playerCards, 'playerScore', () => {
+          console.log('Secuencia de cartas del jugador completada');
+          this.flipCardSequence(this.currentHand.houseCards, 'houseScore', () => {
+            console.log('Secuencia de cartas de la casa completada');
+            this.handleGameEnd();
+          });
         });
-      });
+      }, 2000);
     } catch (error) {
       console.error('Error en auto flip:', error);
       this.game.setAutoFlipState(false);
@@ -236,7 +277,13 @@ class GameUI {
       cardElement.style.visibility = 'visible';
       cardElement.style.opacity = '1';
       
+      // Primero reproducimos el sonido al voltear cada carta
+      this.playCardSound();
+      
+      // Luego volteamos la carta
       this.flipCard(cardElement);
+      
+      // Y actualizamos la puntuación
       this.updateScore(scoreId, cards.slice(0, currentIndex + 1));
       
       currentIndex++;
@@ -283,6 +330,9 @@ class GameUI {
       this.displayWinner(result);
       console.log('Mensaje de ganador mostrado');
       
+      // Añadir efectos visuales basados en el resultado
+      this.applyResultEffects(result);
+      
       // Actualizar el historial
       console.log('Intentando actualizar historial...');
       this.updateResultsHistory();
@@ -293,6 +343,63 @@ class GameUI {
     } catch (error) {
       console.error('Error en handleGameEnd:', error);
       this.game.setAutoFlipState(false);
+    }
+  }
+  
+  applyResultEffects(result) {
+    console.log('Aplicando efectos visuales al resultado');
+    try {
+      // Seleccionamos todas las cartas volteadas del jugador
+      const playerCards = document.querySelectorAll('#playerCards .card.flipped');
+      // Seleccionamos todas las cartas volteadas de la casa
+      const houseCards = document.querySelectorAll('#board .card.flipped');
+      
+      if (result.winner === 'player') {
+        // Efecto de victoria para cartas del jugador
+        playerCards.forEach((card, index) => {
+          const cardFront = card.querySelector('.card-front');
+          if (cardFront) {
+            // Añadir retraso para que los efectos sean secuenciales
+            setTimeout(() => {
+              cardFront.classList.add('win-effect');
+            }, index * 200);
+          }
+        });
+        
+        // Efecto de derrota para cartas de la casa
+        houseCards.forEach((card, index) => {
+          const cardFront = card.querySelector('.card-front');
+          if (cardFront) {
+            setTimeout(() => {
+              cardFront.classList.add('lose-effect');
+            }, 800 + index * 150);
+          }
+        });
+      } else if (result.winner === 'house') {
+        // Efecto de victoria para cartas de la casa
+        houseCards.forEach((card, index) => {
+          const cardFront = card.querySelector('.card-front');
+          if (cardFront) {
+            setTimeout(() => {
+              cardFront.classList.add('win-effect');
+            }, index * 200);
+          }
+        });
+        
+        // Efecto de derrota para cartas del jugador
+        playerCards.forEach((card, index) => {
+          const cardFront = card.querySelector('.card-front');
+          if (cardFront) {
+            setTimeout(() => {
+              cardFront.classList.add('lose-effect');
+            }, 800 + index * 150);
+          }
+        });
+      } 
+      // Para empate no añadimos efectos especiales
+      
+    } catch (error) {
+      console.error('Error al aplicar efectos visuales:', error);
     }
   }
 
@@ -443,7 +550,16 @@ class GameUI {
     if (this.premioSound) {
       this.premioSound.currentTime = 0;
       this.premioSound.play().catch(error => 
-        console.log('Error reproduciendo sonido:', error)
+        console.log('Error reproduciendo sonido de premio:', error)
+      );
+    }
+  }
+  
+  playCardSound() {
+    if (this.cardSound) {
+      this.cardSound.currentTime = 0;
+      this.cardSound.play().catch(error => 
+        console.log('Error reproduciendo sonido de carta:', error)
       );
     }
   }
