@@ -10,6 +10,7 @@ class Game {
       currentHand: null
     };
     this.lastResults = this.loadResults(); // Cargar resultados guardados
+    this.globalStats = this.loadGlobalStats(); // Cargar estadísticas globales
     console.log('Game inicializado correctamente');
   }
 
@@ -113,7 +114,11 @@ class Game {
       let winner;
       let isBlackjack = false;
 
-      if (playerScore > 21) {
+      // Si ambos se pasan de 21, consideramos empate
+      if (playerScore > 21 && houseScore > 21) {
+        winner = 'tie';
+        console.log('Ambos jugadores se pasaron de 21, empate');
+      } else if (playerScore > 21) {
         winner = 'house';
       } else if (houseScore > 21) {
         winner = 'player';
@@ -140,6 +145,9 @@ class Game {
       // Agregar el resultado al historial
       console.log('Agregando resultado al historial:', result);
       this.addResult(result);
+
+      // Actualizar estadísticas globales
+      this.updateGlobalStats(result);
 
       // Verificar que el resultado se agregó correctamente
       console.log('Estado actual del historial:', this.lastResults);
@@ -205,6 +213,75 @@ class Game {
       console.error('Error al cargar resultados:', error);
     }
     return [];
+  }
+
+  loadGlobalStats() {
+    try {
+      const savedStats = localStorage.getItem('blackjackGlobalStats');
+      if (savedStats) {
+        const stats = JSON.parse(savedStats);
+        console.log('Estadísticas globales cargadas de localStorage:', stats);
+        return stats;
+      }
+    } catch (error) {
+      console.error('Error al cargar estadísticas globales:', error);
+    }
+    return {
+      totalGames: 0,
+      playerWins: 0,
+      houseWins: 0,
+      ties: 0,
+      blackjacks: 0
+    };
+  }
+
+  saveGlobalStats() {
+    try {
+      localStorage.setItem('blackjackGlobalStats', JSON.stringify(this.globalStats));
+      console.log('Estadísticas globales guardadas en localStorage');
+    } catch (error) {
+      console.error('Error al guardar estadísticas globales:', error);
+    }
+  }
+
+  updateGlobalStats(result) {
+    if (!result || !result.winner) {
+      console.error('Intento de actualizar estadísticas con resultado inválido:', result);
+      return;
+    }
+
+    console.log('Actualizando estadísticas globales para resultado:', result.winner);
+
+    // Incrementar contador total de juegos solo si no es empate
+    if (result.winner !== 'tie') {
+      this.globalStats.totalGames++;
+      console.log('Incrementando totalGames a:', this.globalStats.totalGames);
+    }
+
+    // Actualizar contadores según el ganador
+    if (result.winner === 'player') {
+      this.globalStats.playerWins++;
+      console.log('Incrementando playerWins a:', this.globalStats.playerWins);
+      if (result.isBlackjack) {
+        this.globalStats.blackjacks++;
+      }
+    } else if (result.winner === 'house') {
+      this.globalStats.houseWins++;
+      console.log('Incrementando houseWins a:', this.globalStats.houseWins);
+    } else if (result.winner === 'tie') {
+      this.globalStats.ties++;
+      console.log('Incrementando ties a:', this.globalStats.ties);
+      // No se incrementa totalGames para empates
+    }
+
+    // Guardar estadísticas actualizadas
+    this.saveGlobalStats();
+    console.log('Estadísticas globales actualizadas:', this.globalStats);
+  }
+
+  getGlobalStats() {
+    // Devolver una copia para evitar modificaciones directas
+    return { ...this.globalStats };
   }
 
   getLastResults() {

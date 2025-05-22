@@ -23,6 +23,7 @@ class GameUI {
     }
 
     this.currentHand = null;
+    this.loopMode = false; // Modo bucle desactivado por defecto
     
     // Verificar elementos necesarios
     this.verifyRequiredElements();
@@ -72,12 +73,29 @@ class GameUI {
 
     // Configurar nuevos listeners
     dealButton.onclick = () => {
-      console.log('Botón de repartir clickeado');
+      console.log('Botón Loop clickeado');
       try {
-        this.handleDeal();
+        // Cambiar el modo loop
+        this.loopMode = !this.loopMode;
+        
+        // Actualizar la apariencia del botón según el estado
+        if (this.loopMode) {
+          dealButton.classList.add('active-loop');
+          dealButton.querySelector('i').classList.add('fa-spin');
+          dealButton.title = 'Desactivar modo bucle';
+          
+          // Si no hay un juego en progreso, comenzar uno
+          if (!this.game.getGameState().isAutoFlipInProgress) {
+            this.handleDeal();
+          }
+        } else {
+          dealButton.classList.remove('active-loop');
+          dealButton.querySelector('i').classList.remove('fa-spin');
+          dealButton.title = 'Activar modo bucle';
+        }
       } catch (error) {
-        console.error('Error al manejar el reparto:', error);
-        alert('Error al repartir las cartas. Por favor, intenta de nuevo.');
+        console.error('Error al manejar el modo loop:', error);
+        alert('Error al cambiar el modo de juego. Por favor, intenta de nuevo.');
       }
     };
 
@@ -91,6 +109,11 @@ class GameUI {
       }
     };
 
+    // Agregar evento para recargar página
+    window.addEventListener('beforeunload', () => {
+      this.loopMode = false; // Asegurar que el loop se detenga al recargar
+    });
+    
     console.log('Event listeners configurados correctamente');
   }
 
@@ -333,12 +356,34 @@ class GameUI {
       // Añadir efectos visuales basados en el resultado
       this.applyResultEffects(result);
       
-      // Actualizar el historial
+      // Actualizar el historial y estadísticas 
       console.log('Intentando actualizar historial...');
       this.updateResultsHistory();
       console.log('Historial actualizado');
       
       this.game.setAutoFlipState(false);
+      
+      // Si el resultado es un empate o está en modo loop, reiniciar automáticamente
+      if (result.winner === 'tie' || this.loopMode) {
+        // Determinar el tiempo de espera según el resultado y el modo
+        let delay = 3000; // Tiempo base para modo loop
+        
+        if (result.winner === 'tie') {
+          delay = 2000; // Empates se procesan más rápido
+          console.log('Empate detectado, reiniciando juego en', delay, 'ms');
+        } else {
+          console.log('Modo bucle activo, siguiente juego en', delay, 'ms');
+        }
+        
+        setTimeout(() => {
+          // Verificar que seguimos en modo bucle o fue empate
+          if (this.loopMode || result.winner === 'tie') {
+            console.log('Iniciando nueva partida automáticamente');
+            this.handleDeal(); // Iniciar nueva partida
+          }
+        }, delay);
+      }
+      
       console.log('=== FIN handleGameEnd ===');
     } catch (error) {
       console.error('Error en handleGameEnd:', error);
@@ -411,6 +456,63 @@ class GameUI {
       return;
     }
     console.log('Contenedor de resultados encontrado');
+
+    // Obtenemos las estadísticas globales
+    const globalStats = this.game.getGlobalStats();
+    console.log('Estadísticas globales obtenidas:', globalStats);
+    
+    // Actualizamos el título de la sección para mostrar el ratio global
+    const historyTitle = document.querySelector('.results-history h3');
+    if (historyTitle) {
+      const totalGames = globalStats.totalGames || 0;
+      const playerWins = globalStats.playerWins || 0;
+      
+      // Calcular el ratio de victorias
+      const winRate = totalGames > 0 ? Math.round((playerWins / totalGames) * 100) : 0;
+      console.log(`Calculando winrate: ${playerWins} victorias / ${totalGames} partidas = ${winRate}%`);
+      
+      historyTitle.innerHTML = `
+        <i class="fas fa-history"></i> Últimos Resultados 
+        <span class="global-stats">
+          <span class="win-rate-label">winratio</span> <span class="win-rate ${winRate >= 50 ? 'positive' : 'negative'}">${winRate}%</span>
+          <button id="resetStatsButton" class="reset-stats-button" title="Reiniciar estadísticas">
+            <i class="fas fa-redo-alt"></i>
+          </button>
+        </span>
+      `;
+      
+      // Agregamos la barra de progreso para mostrar el ratio visualmente
+      const progressBarContainer = document.createElement('div');
+      progressBarContainer.className = 'winrate-bar-container';
+      
+      // Barra de progreso de victorias (verde)
+      const winBar = document.createElement('div');
+      winBar.className = 'winrate-bar win';
+      winBar.style.width = `${winRate}%`;
+      
+      // Barra de progreso de derrotas (roja)
+      const loseBar = document.createElement('div');
+      loseBar.className = 'winrate-bar lose';
+      loseBar.style.width = `${100 - winRate}%`;
+      
+      // Añadimos las barras al contenedor
+      progressBarContainer.appendChild(winBar);
+      progressBarContainer.appendChild(loseBar);
+      
+      // Añadimos el contenedor después del título
+      historyTitle.appendChild(progressBarContainer);
+      
+      // Añadir event listener al botón de reset
+      setTimeout(() => {
+        const resetButton = document.getElementById('resetStatsButton');
+        if (resetButton) {
+          resetButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Evitar propagación del evento
+            this.resetGlobalStats();
+          });
+        }
+      }, 0);
+    }
 
     const results = this.game.getLastResults();
     console.log('Resultados obtenidos del juego:', results);
@@ -567,5 +669,25 @@ class GameUI {
   handleNext() {
     if (this.game.getGameState().isAutoFlipInProgress) return;
     this.handleDeal();
+  }
+
+  resetGlobalStats() {
+    console.log('Reiniciando estadísticas globales...');
+    // Restablecer estadísticas en el objeto Game
+    this.game.globalStats = {
+      totalGames: 0,
+      playerWins: 0,
+      houseWins: 0,
+      ties: 0,
+      blackjacks: 0
+    };
+    
+    // Guardar estadísticas reseteadas en localStorage
+    this.game.saveGlobalStats();
+    
+    // Actualizar la interfaz
+    this.updateResultsHistory();
+    
+    console.log('Estadísticas globales reiniciadas');
   }
 } 
