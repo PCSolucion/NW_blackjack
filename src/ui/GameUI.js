@@ -250,7 +250,26 @@ class GameUI {
     const score = this.game.calculateHandValue(cards);
     const scoreElement = document.getElementById(scoreId);
     if (scoreElement) {
+      // Guardar la puntuación anterior
+      const oldScore = parseInt(scoreElement.textContent) || 0;
+      
+      // Actualizar el texto
       scoreElement.textContent = score;
+      
+      // Añadir y quitar clase para animación si cambia la puntuación
+      if (score !== oldScore) {
+        scoreElement.classList.add('active');
+        setTimeout(() => {
+          scoreElement.classList.remove('active');
+        }, 1000);
+      }
+      
+      // Si la puntuación es 21 o se pasa, destacar el marcador
+      if (score >= 21) {
+        scoreElement.style.fontWeight = '900';
+      } else {
+        scoreElement.style.fontWeight = '800';
+      }
     }
   }
 
