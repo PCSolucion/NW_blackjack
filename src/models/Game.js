@@ -70,18 +70,22 @@ class Game {
         }
 
         if (card.isAceCard()) {
+          // Contar los ases como 1 inicialmente
           aces++;
-          value += 11;
-        } else if (['J', 'Q', 'K'].includes(card.value)) {
+          value += 1;
+        } else if (card.isFaceCard()) {
+          // J, Q, K valen 10
           value += 10;
         } else {
+          // Cartas numéricas valen su número
           value += parseInt(card.value);
         }
       }
 
-      // Ajustar el valor de los ases si es beneficioso
-      while (value > 21 && aces > 0) {
-        value -= 10;
+      // Ajustar el valor de los ases para obtener la mejor puntuación posible
+      // Los ases pueden valer 1 u 11, elegimos 11 si no nos pasamos de 21
+      while (aces > 0 && value + 10 <= 21) {
+        value += 10;
         aces--;
       }
 
@@ -119,8 +123,9 @@ class Game {
         winner = playerScore > houseScore ? 'player' : 'house';
       }
 
-      // Verificar Blackjack
-      if (winner === 'player' && playerCards.length === 2 && playerScore === 21) {
+      // Verificar si el jugador tiene 21 puntos (para activar el premio especial)
+      // Un blackjack clásico es con 2 cartas, pero para el premio queremos cualquier combinación que sume 21
+      if (winner === 'player' && playerScore === 21) {
         isBlackjack = true;
       }
 

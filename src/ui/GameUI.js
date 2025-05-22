@@ -143,20 +143,30 @@ class GameUI {
 
     const cardInner = cardElement.querySelector('.card-inner');
     const cardFront = cardElement.querySelector('.card-front');
+    const cardBack = cardElement.querySelector('.card-back');
     
-    if (!cardInner || !cardFront) {
+    if (!cardInner || !cardFront || !cardBack) {
       throw new Error('No se encontraron los elementos necesarios en la carta');
     }
 
     // Calcular la posición en el sprite de cartas
     const position = card.calculatePosition();
-    console.log(`Posición calculada para carta ${card.toString()}: ${position}`);
+    console.log(`Mostrando carta ${card.toString()} en posición ${position}`);
     
     // Aplicar la posición al fondo de la carta
     cardFront.style.backgroundPositionX = `${-120 * position}px`;
     
+    // Asegurar que la carta tenga las clases correctas
+    cardElement.classList.add('card');
+    cardElement.classList.remove('flipped');
+    
     // Aplicar el estado de volteo
-    cardInner.style.transform = flipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    if (flipped) {
+      cardElement.classList.add('flipped');
+      cardInner.style.transform = 'rotateY(180deg)';
+    } else {
+      cardInner.style.transform = 'rotateY(0deg)';
+    }
     
     // Guardar referencia a la carta en el elemento
     cardElement.card = card;
@@ -174,6 +184,7 @@ class GameUI {
     }
 
     cardElement.flipped = !cardElement.flipped;
+    cardElement.classList.toggle('flipped');
     cardInner.style.transform = cardElement.flipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
   }
 
@@ -221,6 +232,10 @@ class GameUI {
         return;
       }
 
+      // Asegurarse de que la carta esté visible antes de voltearla
+      cardElement.style.visibility = 'visible';
+      cardElement.style.opacity = '1';
+      
       this.flipCard(cardElement);
       this.updateScore(scoreId, cards.slice(0, currentIndex + 1));
       
@@ -355,6 +370,8 @@ class GameUI {
     winnerMessage.style.visibility = 'visible';
     
     if (result.winner === 'player') {
+      // Si el jugador tiene 21 puntos (isBlackjack = true), mostramos el premio especial
+      // De lo contrario, mostramos el premio normal
       const prizeElement = result.isBlackjack ? 
         document.getElementById('prize21') : 
         document.getElementById('prizeNormal');

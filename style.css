@@ -247,11 +247,16 @@ body {
   width: 32px;
   height: 32px;
   margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prize-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   filter: drop-shadow(0 0 8px rgba(108, 92, 231, 0.6));
-  background-image: url('https://res.cloudinary.com/pcsolucion/image/upload/v1747684591/factionpotionhealtht4_bnadwr.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
 }
 
 .prize-name {
@@ -297,7 +302,7 @@ body {
   font-size: 16px;
 }
 
-.prize-row.active .prize-icon {
+.prize-row.active .prize-image {
   animation: glowPotion 1.5s infinite alternate;
 }
 
