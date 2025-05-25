@@ -596,10 +596,10 @@ class GameUI {
     }
 
     winnerMessage.style.visibility = 'visible';
+    // Agregar el atributo data-winner para los estilos específicos
+    winnerMessage.setAttribute('data-winner', result.winner);
     
     if (result.winner === 'player') {
-      // Si el jugador tiene 21 puntos (isBlackjack = true), mostramos el premio especial
-      // De lo contrario, mostramos el premio normal
       const prizeElement = result.isBlackjack ? 
         document.getElementById('prize21') : 
         document.getElementById('prizeNormal');

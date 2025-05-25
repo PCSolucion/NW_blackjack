@@ -212,17 +212,88 @@ body {
 /* Mensaje ganador */
 .winner-message {
   margin-top: 15px;
-  padding: 12px;
-  font-size: 22px;
-  font-weight: 600;
+  padding: 15px 25px;
+  font-size: 28px;
+  font-weight: 700;
   text-align: center;
   visibility: hidden;
   border-radius: var(--border-radius);
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  box-shadow: 0 8px 32px rgba(108, 92, 231, 0.2);
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.9), rgba(253, 121, 168, 0.9));
+  box-shadow: 
+    0 10px 30px rgba(108, 92, 231, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  animation: pulse 1.5s infinite alternate;
+  letter-spacing: 2px;
+  animation: winnerPulse 1.5s infinite alternate;
+  transform-origin: center;
+  backdrop-filter: blur(5px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.winner-message::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transform: rotate(45deg);
+  animation: shine 2s infinite;
+}
+
+@keyframes winnerPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 
+      0 10px 30px rgba(108, 92, 231, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  }
+  100% {
+    transform: scale(1.05);
+    box-shadow: 
+      0 15px 40px rgba(108, 92, 231, 0.5),
+      0 0 0 2px rgba(255, 255, 255, 0.2) inset;
+  }
+}
+
+@keyframes shine {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+/* Estilos específicos para cada tipo de mensaje */
+.winner-message[data-winner="player"] {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(139, 195, 74, 0.9));
+  box-shadow: 
+    0 10px 30px rgba(76, 175, 80, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+.winner-message[data-winner="house"] {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.9), rgba(233, 30, 99, 0.9));
+  box-shadow: 
+    0 10px 30px rgba(244, 67, 54, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+.winner-message[data-winner="tie"] {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.9), rgba(255, 152, 0, 0.9));
+  box-shadow: 
+    0 10px 30px rgba(255, 193, 7, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 }
 
 /* Tabla de premios */
@@ -505,6 +576,11 @@ button:active {
     width: 100px;
     height: 142px;
   }
+  
+  .winner-message {
+    font-size: 24px;
+    padding: 12px 20px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -524,6 +600,11 @@ button:active {
     height: 36px;
     font-size: 13px;
     padding: 0 10px;
+  }
+  
+  .winner-message {
+    font-size: 20px;
+    padding: 10px 15px;
   }
 }
 
