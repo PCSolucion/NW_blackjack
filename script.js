@@ -7,15 +7,11 @@ class Deck {
   }
 
   reset() {
-    this.cards = [];
     const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
     const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-
-    for (const suit of suits) {
-      for (const value of values) {
-        this.cards.push(new Card(suit, value));
-      }
-    }
+    this.cards = suits.flatMap(suit => 
+      values.map(value => new Card(suit, value))
+    );
   }
 
   shuffle() {
@@ -27,7 +23,8 @@ class Deck {
 
   deal() {
     if (this.isEmpty()) {
-      throw new Error('No hay más cartas en la baraja');
+      this.reset();
+      this.shuffle();
     }
     return this.cards.pop();
   }
@@ -41,7 +38,28 @@ class Deck {
   }
 }
 
-// Clase Game
+// Cache de elementos DOM
+const DOM_CACHE = {
+  dealButton: document.getElementById('dealButton'),
+  nextButton: document.getElementById('nextButton'),
+  playerScoreElement: document.getElementById('playerScore'),
+  houseScoreElement: document.getElementById('houseScore'),
+  messageElement: document.getElementById('message'),
+  cardElements: {
+    player: Array.from({ length: 3 }, (_, i) => ({
+      placeholder: document.getElementById(`playerCard${i + 1}`),
+      inner: document.getElementById(`playerCard${i + 1}`)?.querySelector('.card-inner'),
+      front: document.getElementById(`playerCard${i + 1}`)?.querySelector('.card-front')
+    })),
+    house: Array.from({ length: 3 }, (_, i) => ({
+      placeholder: document.getElementById(`card${i + 1}`),
+      inner: document.getElementById(`card${i + 1}`)?.querySelector('.card-inner'),
+      front: document.getElementById(`card${i + 1}`)?.querySelector('.card-front')
+    }))
+  }
+};
+
+// Clase Game con optimizaciones
 class Game {
   constructor() {
     this.deck = new Deck();
@@ -52,28 +70,22 @@ class Game {
       playerScore: 0,
       houseScore: 0
     };
+    this._cardValues = new Map([
+      ['A', 1], ['2', 2], ['3', 3], ['4', 4], ['5', 5],
+      ['6', 6], ['7', 7], ['8', 8], ['9', 9], ['10', 10],
+      ['J', 10], ['Q', 10], ['K', 10]
+    ]);
   }
 
   dealNewHand() {
-    if (this.deck.getRemainingCards() < 6) {
-      this.deck.reset();
-      this.deck.shuffle();
-    }
-
-    this.playerCards = [];
-    this.houseCards = [];
-    this.gameState.playerScore = 0;
-    this.gameState.houseScore = 0;
-
-    // Repartir 6 cartas (3 para cada jugador)
-    for (let i = 0; i < 3; i++) {
-      this.playerCards.push(this.deck.deal());
-      this.houseCards.push(this.deck.deal());
-    }
+    this.playerCards = Array.from({ length: 3 }, () => this.deck.deal());
+    this.houseCards = Array.from({ length: 3 }, () => this.deck.deal());
+    this.gameState.playerScore = this.calculateHandValue(this.playerCards);
+    this.gameState.houseScore = this.calculateHandValue(this.houseCards);
 
     return {
-      playerCards: [...this.playerCards],
-      houseCards: [...this.houseCards]
+      playerCards: this.playerCards,
+      houseCards: this.houseCards
     };
   }
 
@@ -82,19 +94,19 @@ class Game {
     let aces = 0;
 
     for (const card of cards) {
-      if (card.isAceCard()) {
+      const cardValue = this._cardValues.get(card.value);
+      if (card.value === 'A') {
         aces++;
-        value += 1;
       } else {
-        value += card.getNumericValue();
+        value += cardValue;
       }
     }
 
-    // Ajustar el valor de los ases si es beneficioso
-    while (aces > 0 && value + 10 <= 21) {
-      value += 10;
+    while (aces > 0 && value + 11 <= 21) {
+      value += 11;
       aces--;
     }
+    value += aces;
 
     return value;
   }
@@ -143,7 +155,7 @@ class Game {
   }
 }
 
-// Clase GameUI
+// Clase GameUI con optimizaciones
 class GameUI {
   constructor(game) {
     this.game = game;
@@ -154,15 +166,8 @@ class GameUI {
   }
 
   initializeEventListeners() {
-    const dealButton = document.getElementById('dealButton');
-    const nextButton = document.getElementById('nextButton');
-
-    if (dealButton) {
-      dealButton.addEventListener('click', () => this.handleDeal());
-    }
-    if (nextButton) {
-      nextButton.addEventListener('click', () => this.handleNext());
-    }
+    DOM_CACHE.dealButton?.addEventListener('click', () => this.handleDeal());
+    DOM_CACHE.nextButton?.addEventListener('click', () => this.handleNext());
   }
 
   handleDeal() {
@@ -177,29 +182,26 @@ class GameUI {
   displayCards(playerCards, houseCards) {
     // Mostrar cartas del jugador
     playerCards.forEach((card, index) => {
-      this.displayCard(card, `playerCard${index + 1}`, false);
+      this.displayCard(card, index, true);
     });
 
     // Mostrar cartas de la casa
     houseCards.forEach((card, index) => {
-      this.displayCard(card, `card${index + 1}`, false);
+      this.displayCard(card, index, false);
     });
   }
 
-  displayCard(card, placeHolderId, flipped) {
-    const placeHolder = document.getElementById(placeHolderId);
-    if (!placeHolder) return;
-
-    const cardInner = placeHolder.querySelector('.card-inner');
-    const cardFront = placeHolder.querySelector('.card-front');
+  displayCard(card, index, isPlayer) {
+    const cardElements = isPlayer ? DOM_CACHE.cardElements.player[index] : DOM_CACHE.cardElements.house[index];
+    if (!cardElements?.front) return;
     
-    if (!cardInner || !cardFront) return;
+    cardElements.front.style.backgroundPositionX = (-120 * card.getPosition()) + 'px';
+    card.placeHolder = cardElements.placeholder;
+    card.flipped = false;
     
-    cardFront.style.backgroundPositionX = (-120 * card.getPosition()) + 'px';
-    card.placeHolder = placeHolder;
-    card.flipped = flipped;
-    
-    cardInner.style.transform = flipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    if (cardElements.inner) {
+      cardElements.inner.style.transform = 'rotateY(0deg)';
+    }
   }
 
   flipCard(card) {
